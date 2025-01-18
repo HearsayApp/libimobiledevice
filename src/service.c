@@ -39,19 +39,20 @@
  */
 static service_error_t idevice_to_service_error(idevice_error_t err)
 {
-	switch (err) {
-		case IDEVICE_E_SUCCESS:
-			return SERVICE_E_SUCCESS;
-		case IDEVICE_E_INVALID_ARG:
-			return SERVICE_E_INVALID_ARG;
-		case IDEVICE_E_SSL_ERROR:
-			return SERVICE_E_SSL_ERROR;
-		case IDEVICE_E_NOT_ENOUGH_DATA:
-			return SERVICE_E_NOT_ENOUGH_DATA;
-		case IDEVICE_E_TIMEOUT:
-			return SERVICE_E_TIMEOUT;
-		default:
-			break;
+	switch (err)
+	{
+	case IDEVICE_E_SUCCESS:
+		return SERVICE_E_SUCCESS;
+	case IDEVICE_E_INVALID_ARG:
+		return SERVICE_E_INVALID_ARG;
+	case IDEVICE_E_SSL_ERROR:
+		return SERVICE_E_SSL_ERROR;
+	case IDEVICE_E_NOT_ENOUGH_DATA:
+		return SERVICE_E_NOT_ENOUGH_DATA;
+	case IDEVICE_E_TIMEOUT:
+		return SERVICE_E_TIMEOUT;
+	default:
+		break;
 	}
 	return SERVICE_E_UNKNOWN_ERROR;
 }
@@ -63,7 +64,8 @@ service_error_t service_client_new(idevice_t device, lockdownd_service_descripto
 
 	/* Attempt connection */
 	idevice_connection_t connection = NULL;
-	if (idevice_connect(device, service->port, &connection) != IDEVICE_E_SUCCESS) {
+	if (idevice_connect(device, service->port, &connection) != IDEVICE_E_SUCCESS)
+	{
 		return SERVICE_E_MUX_ERROR;
 	}
 
@@ -80,12 +82,13 @@ service_error_t service_client_new(idevice_t device, lockdownd_service_descripto
 	return SERVICE_E_SUCCESS;
 }
 
-service_error_t service_client_factory_start_service(idevice_t device, const char* service_name, void **client, const char* label, int32_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void**), int32_t *error_code)
+service_error_t service_client_factory_start_service(idevice_t device, const char *service_name, void **client, const char *label, int32_t (*constructor_func)(idevice_t, lockdownd_service_descriptor_t, void **), int32_t *error_code)
 {
 	*client = NULL;
 
 	lockdownd_client_t lckd = NULL;
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, label)) {
+	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &lckd, label))
+	{
 		debug_info("Could not create a lockdown client.");
 		return SERVICE_E_START_SERVICE_ERROR;
 	}
@@ -94,22 +97,28 @@ service_error_t service_client_factory_start_service(idevice_t device, const cha
 	lockdownd_error_t lerr = lockdownd_start_service(lckd, service_name, &service);
 	lockdownd_client_free(lckd);
 
-	if (lerr != LOCKDOWN_E_SUCCESS) {
+	if (lerr != LOCKDOWN_E_SUCCESS)
+	{
 		debug_info("Could not start service %s: %s", service_name, lockdownd_strerror(lerr));
 		return SERVICE_E_START_SERVICE_ERROR;
 	}
 
 	int32_t ec;
-	if (constructor_func) {
+	if (constructor_func)
+	{
 		ec = (int32_t)constructor_func(device, service, client);
-	} else {
-		ec = service_client_new(device, service, (service_client_t*)client);
 	}
-	if (error_code) {
+	else
+	{
+		ec = service_client_new(device, service, (service_client_t *)client);
+	}
+	if (error_code)
+	{
 		*error_code = ec;
 	}
 
-	if (ec != SERVICE_E_SUCCESS) {
+	if (ec != SERVICE_E_SUCCESS)
+	{
 		debug_info("Could not connect to service %s! Port: %i, error: %i", service_name, service->port, ec);
 	}
 
@@ -132,51 +141,57 @@ service_error_t service_client_free(service_client_t client)
 	return err;
 }
 
-service_error_t service_send(service_client_t client, const char* data, uint32_t size, uint32_t *sent)
+service_error_t service_send(service_client_t client, const char *data, uint32_t size, uint32_t *sent)
 {
 	service_error_t res = SERVICE_E_UNKNOWN_ERROR;
 	uint32_t bytes = 0;
 
-	if (!client || (client && !client->connection) || !data || (size == 0)) {
+	if (!client || (client && !client->connection) || !data || (size == 0))
+	{
 		return SERVICE_E_INVALID_ARG;
 	}
 
 	debug_info("sending %d bytes", size);
 	res = idevice_to_service_error(idevice_connection_send(client->connection, data, size, &bytes));
-	if (res != SERVICE_E_SUCCESS) {
+	if (res != SERVICE_E_SUCCESS)
+	{
 		debug_info("ERROR: sending to device failed.");
 	}
-	if (sent) {
+	if (sent)
+	{
 		*sent = bytes;
 	}
 
 	return res;
 }
 
-service_error_t service_receive_with_timeout(service_client_t client, char* data, uint32_t size, uint32_t *received, unsigned int timeout)
+service_error_t service_receive_with_timeout(service_client_t client, char *data, uint32_t size, uint32_t *received, unsigned int timeout)
 {
 	service_error_t res = SERVICE_E_UNKNOWN_ERROR;
 	uint32_t bytes = 0;
 
-	if (!client || (client && !client->connection) || !data || (size == 0)) {
+	if (!client || (client && !client->connection) || !data || (size == 0))
+	{
 		return SERVICE_E_INVALID_ARG;
 	}
 
 	res = idevice_to_service_error(idevice_connection_receive_timeout(client->connection, data, size, &bytes, timeout));
-	if (res != SERVICE_E_SUCCESS && res != SERVICE_E_TIMEOUT) {
+	if (res != SERVICE_E_SUCCESS && res != SERVICE_E_TIMEOUT)
+	{
 		debug_info("could not read data");
 		return res;
 	}
-	if (received) {
+	if (received)
+	{
 		*received = bytes;
 	}
 
 	return res;
 }
 
-service_error_t service_receive(service_client_t client, char* data, uint32_t size, uint32_t *received)
+service_error_t service_receive(service_client_t client, char *data, uint32_t size, uint32_t *received)
 {
-	return service_receive_with_timeout(client, data, size, received, 30000);
+	return service_receive_with_timeout(client, data, size, received, 900000);
 }
 
 service_error_t service_enable_ssl(service_client_t client)

@@ -39,21 +39,22 @@
  */
 static property_list_service_error_t service_to_property_list_service_error(service_error_t err)
 {
-	switch (err) {
-		case SERVICE_E_SUCCESS:
-			return PROPERTY_LIST_SERVICE_E_SUCCESS;
-		case SERVICE_E_INVALID_ARG:
-			return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
-		case SERVICE_E_MUX_ERROR:
-			return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
-		case SERVICE_E_SSL_ERROR:
-			return PROPERTY_LIST_SERVICE_E_SSL_ERROR;
-		case SERVICE_E_NOT_ENOUGH_DATA:
-			return PROPERTY_LIST_SERVICE_E_NOT_ENOUGH_DATA;
-		case SERVICE_E_TIMEOUT:
-			return PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT;
-		default:
-			break;
+	switch (err)
+	{
+	case SERVICE_E_SUCCESS:
+		return PROPERTY_LIST_SERVICE_E_SUCCESS;
+	case SERVICE_E_INVALID_ARG:
+		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
+	case SERVICE_E_MUX_ERROR:
+		return PROPERTY_LIST_SERVICE_E_MUX_ERROR;
+	case SERVICE_E_SSL_ERROR:
+		return PROPERTY_LIST_SERVICE_E_SSL_ERROR;
+	case SERVICE_E_NOT_ENOUGH_DATA:
+		return PROPERTY_LIST_SERVICE_E_NOT_ENOUGH_DATA;
+	case SERVICE_E_TIMEOUT:
+		return PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT;
+	default:
+		break;
 	}
 	return PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR;
 }
@@ -65,7 +66,8 @@ property_list_service_error_t property_list_service_client_new(idevice_t device,
 
 	service_client_t parent = NULL;
 	service_error_t rerr = service_client_new(device, service, &parent);
-	if (rerr != SERVICE_E_SUCCESS) {
+	if (rerr != SERVICE_E_SUCCESS)
+	{
 		return service_to_property_list_service_error(rerr);
 	}
 
@@ -114,36 +116,47 @@ static property_list_service_error_t internal_plist_send(property_list_service_c
 	uint32_t nlen = 0;
 	uint32_t bytes = 0;
 
-	if (!client || (client && !client->parent) || !plist) {
+	if (!client || (client && !client->parent) || !plist)
+	{
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
-	if (binary) {
+	if (binary)
+	{
 		plist_to_bin(plist, &content, &length);
-	} else {
+	}
+	else
+	{
 		plist_to_xml(plist, &content, &length);
 	}
 
-	if (!content || length == 0) {
+	if (!content || length == 0)
+	{
 		return PROPERTY_LIST_SERVICE_E_PLIST_ERROR;
 	}
 
 	nlen = htobe32(length);
 	debug_info("sending %d bytes", length);
-	service_send(client->parent, (const char*)&nlen, sizeof(nlen), &bytes);
-	if (bytes == sizeof(nlen)) {
+	service_send(client->parent, (const char *)&nlen, sizeof(nlen), &bytes);
+	if (bytes == sizeof(nlen))
+	{
 		service_send(client->parent, content, length, &bytes);
-		if (bytes > 0) {
+		if (bytes > 0)
+		{
 			debug_info("sent %d bytes", bytes);
 			debug_plist(plist);
-			if (bytes == length) {
+			if (bytes == length)
+			{
 				res = PROPERTY_LIST_SERVICE_E_SUCCESS;
-			} else {
+			}
+			else
+			{
 				debug_info("ERROR: Could not send all data (%d of %d)!", bytes, length);
 			}
 		}
 	}
-	if (bytes <= 0) {
+	if (bytes <= 0)
+	{
 		debug_info("ERROR: sending to device failed.");
 		res = PROPERTY_LIST_SERVICE_E_MUX_ERROR;
 	}
@@ -186,18 +199,21 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 	uint32_t pktlen = 0;
 	uint32_t bytes = 0;
 
-	if (!client || (client && !client->parent) || !plist) {
+	if (!client || (client && !client->parent) || !plist)
+	{
 		return PROPERTY_LIST_SERVICE_E_INVALID_ARG;
 	}
 
 	*plist = NULL;
-	service_error_t serr = service_receive_with_timeout(client->parent, (char*)&pktlen, sizeof(pktlen), &bytes, timeout);
-	if (serr != SERVICE_E_SUCCESS) {
+	service_error_t serr = service_receive_with_timeout(client->parent, (char *)&pktlen, sizeof(pktlen), &bytes, timeout);
+	if (serr != SERVICE_E_SUCCESS)
+	{
 		debug_info("initial read failed!");
 		return service_to_property_list_service_error(serr);
 	}
 
-	if (bytes == 0) {
+	if (bytes == 0)
+	{
 		/* success but 0 bytes length, assume timeout */
 		return PROPERTY_LIST_SERVICE_E_RECEIVE_TIMEOUT;
 	}
@@ -209,15 +225,18 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 
 	pktlen = be32toh(pktlen);
 	debug_info("%d bytes following", pktlen);
-	content = (char*)malloc(pktlen);
-	if (!content) {
+	content = (char *)malloc(pktlen);
+	if (!content)
+	{
 		debug_info("out of memory when allocating %d bytes", pktlen);
 		return PROPERTY_LIST_SERVICE_E_UNKNOWN_ERROR;
 	}
 
-	while (curlen < pktlen) {
-		serr = service_receive(client->parent, content+curlen, pktlen-curlen, &bytes);
-		if (serr != SERVICE_E_SUCCESS) {
+	while (curlen < pktlen)
+	{
+		serr = service_receive(client->parent, content + curlen, pktlen - curlen, &bytes);
+		if (serr != SERVICE_E_SUCCESS)
+		{
 			res = service_to_property_list_service_error(serr);
 			break;
 		}
@@ -225,9 +244,11 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		curlen += bytes;
 	}
 
-	if (curlen < pktlen) {
+	if (curlen < pktlen)
+	{
 		debug_info("received incomplete packet (%d of %d bytes)", curlen, pktlen);
-		if (curlen > 0) {
+		if (curlen > 0)
+		{
 			debug_info("incomplete packet following:");
 			debug_buffer(content, curlen);
 		}
@@ -235,24 +256,33 @@ static property_list_service_error_t internal_plist_receive_timeout(property_lis
 		return res;
 	}
 
-	if ((pktlen > 8) && !memcmp(content, "bplist00", 8)) {
+	if ((pktlen > 8) && !memcmp(content, "bplist00", 8))
+	{
 		plist_from_bin(content, pktlen, plist);
-	} else if ((pktlen > 5) && !memcmp(content, "<?xml", 5)) {
+	}
+	else if ((pktlen > 5) && !memcmp(content, "<?xml", 5))
+	{
 		/* iOS 4.3+ hack: plist data might contain invalid characters, thus we convert those to spaces */
-		for (bytes = 0; bytes < pktlen-1; bytes++) {
+		for (bytes = 0; bytes < pktlen - 1; bytes++)
+		{
 			if ((content[bytes] >= 0) && (content[bytes] < 0x20) && (content[bytes] != 0x09) && (content[bytes] != 0x0a) && (content[bytes] != 0x0d))
 				content[bytes] = 0x20;
 		}
 		plist_from_xml(content, pktlen, plist);
-	} else {
+	}
+	else
+	{
 		debug_info("WARNING: received unexpected non-plist content");
 		debug_buffer(content, pktlen);
 	}
 
-	if (*plist) {
+	if (*plist)
+	{
 		debug_plist(*plist);
 		res = PROPERTY_LIST_SERVICE_E_SUCCESS;
-	} else {
+	}
+	else
+	{
 		res = PROPERTY_LIST_SERVICE_E_PLIST_ERROR;
 	}
 
@@ -269,7 +299,7 @@ property_list_service_error_t property_list_service_receive_plist_with_timeout(p
 
 property_list_service_error_t property_list_service_receive_plist(property_list_service_client_t client, plist_t *plist)
 {
-	return internal_plist_receive_timeout(client, plist, 30000);
+	return internal_plist_receive_timeout(client, plist, 900000);
 }
 
 property_list_service_error_t property_list_service_enable_ssl(property_list_service_client_t client)
