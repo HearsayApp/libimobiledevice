@@ -118,6 +118,8 @@ static void notify_cb(const char *notification, void *userdata)
 	{
 		return;
 	}
+	printf("Notification: %s\n", notification);
+	fflush(stdout);
 	if (!strcmp(notification, NP_SYNC_CANCEL_REQUEST))
 	{
 		PRINT_VERBOSE(1, "User has cancelled the backup process on the device.\n");
@@ -2713,6 +2715,8 @@ int main(int argc, char *argv[])
 				}
 				else if (!strcmp(dlmsg, "DLMessageGetFreeDiskSpace"))
 				{
+					PRINT_VERBOSE(1, "DLMessageGetFreeDiskSpace\n");
+					fflush(stdout);
 					/* device wants to know how much disk space is available on the computer */
 					uint64_t freespace = 0;
 					int res = -1;
@@ -2736,6 +2740,8 @@ int main(int argc, char *argv[])
 				}
 				else if (!strcmp(dlmsg, "DLMessagePurgeDiskSpace"))
 				{
+					PRINT_VERBOSE(1, "DLMessagePurgeDiskSpace\n");
+					fflush(stdout);
 					/* device wants to purge disk space on the host - not supported */
 					plist_t empty_dict = plist_new_dict();
 					err = mobilebackup2_send_status_response(mobilebackup2, -1, "Operation not supported", empty_dict);
@@ -2743,16 +2749,22 @@ int main(int argc, char *argv[])
 				}
 				else if (!strcmp(dlmsg, "DLContentsOfDirectory"))
 				{
+					printf("DLContentsOfDirectory\n");
+					fflush(stdout);
 					/* list directory contents */
 					mb2_handle_list_directory(mobilebackup2, message, backup_directory);
 				}
 				else if (!strcmp(dlmsg, "DLMessageCreateDirectory"))
 				{
+					PRINT_VERBOSE(1, "DLMessageCreateDirectory\n");
+					fflush(stdout);
 					/* make a directory */
 					mb2_handle_make_directory(mobilebackup2, message, backup_directory);
 				}
 				else if (!strcmp(dlmsg, "DLMessageMoveFiles") || !strcmp(dlmsg, "DLMessageMoveItems"))
 				{
+					printf("DLMessageMoveFiles\n");
+					fflush(stdout);
 					/* perform a series of rename operations */
 					mb2_set_overall_progress_from_message(message, dlmsg);
 					plist_t moves = plist_array_get_item(message, 1);
@@ -2815,6 +2827,8 @@ int main(int argc, char *argv[])
 				}
 				else if (!strcmp(dlmsg, "DLMessageRemoveFiles") || !strcmp(dlmsg, "DLMessageRemoveItems"))
 				{
+					printf("DLMessageRemoveFiles\n");
+					fflush(stdout);
 					mb2_set_overall_progress_from_message(message, dlmsg);
 					plist_t removes = plist_array_get_item(message, 1);
 					uint32_t cnt = plist_array_get_size(removes);
@@ -2872,6 +2886,8 @@ int main(int argc, char *argv[])
 				}
 				else if (!strcmp(dlmsg, "DLMessageCopyItem"))
 				{
+					printf("DLMessageCopyItem\n");
+					fflush(stdout);
 					plist_t srcpath = plist_array_get_item(message, 1);
 					plist_t dstpath = plist_array_get_item(message, 2);
 					errcode = 0;
@@ -2915,10 +2931,14 @@ int main(int argc, char *argv[])
 				}
 				else if (!strcmp(dlmsg, "DLMessageDisconnect"))
 				{
+					printf("DLMessageDisconnect\n");
+					fflush(stdout);
 					break;
 				}
 				else if (!strcmp(dlmsg, "DLMessageProcessMessage"))
 				{
+					printf("DLMessageProcessMessage\n");
+					fflush(stdout);
 					node_tmp = plist_array_get_item(message, 1);
 					if (plist_get_node_type(node_tmp) != PLIST_DICT)
 					{
@@ -2973,6 +2993,11 @@ int main(int argc, char *argv[])
 						free(str);
 					}
 					break;
+				}
+				else
+				{
+					printf("Incoming Message %s\n", dlmsg);
+					fflush(stdout);
 				}
 
 				/* print status */
