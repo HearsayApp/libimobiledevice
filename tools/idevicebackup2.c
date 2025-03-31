@@ -2742,6 +2742,26 @@ int main(int argc, char *argv[])
 				{
 					PRINT_VERBOSE(1, "DLMessagePurgeDiskSpace\n");
 					fflush(stdout);
+					// get the purge size
+					plist_t purge_size_item = plist_array_get_item(message, 1);
+					uint64_t value = 0;
+					if (plist_get_node_type(purge_size_item) == PLIST_UINT)
+					{
+						plist_get_uint_val(purge_size_item, &value);
+					}
+					else if (plist_get_node_type(purge_size_item) == PLIST_REAL)
+					{
+						double dval = 0;
+						plist_get_real_val(purge_size_item, &dval);
+						value = (uint64_t)dval;
+					}
+					else
+					{
+						value = 0;
+					}
+					printf("Purge size: %llu\n", value);
+					fflush(stdout);
+					plist_free(purge_size_item);
 					/* device wants to purge disk space on the host - not supported */
 					plist_t empty_dict = plist_new_dict();
 					err = mobilebackup2_send_status_response(mobilebackup2, -1, "Operation not supported", empty_dict);
